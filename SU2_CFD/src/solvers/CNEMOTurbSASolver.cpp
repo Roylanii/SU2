@@ -375,12 +375,13 @@ void CNEMOTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_co
     }
 
     /*--- Subtract residual and the Jacobian ---*/
-    
+
     LinSysRes.SubtractBlock(iPoint, residual);
 
     if (implicit) Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
 
   }
+  END_SU2_OMP_FOR
 
   if (harmonic_balance) {
 
@@ -396,6 +397,7 @@ void CNEMOTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_co
         LinSysRes(iPoint,iVar) += Source*Volume;
       }
     }
+    END_SU2_OMP_FOR
   }
 
 }
@@ -411,7 +413,8 @@ void CNEMOTurbSASolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_c
 
   if (config->GetWall_Functions()) {
     SU2_OMP_MASTER
-    SetNuTilde_WF(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
+    //SetTurbVars_WF(geometry, solver_container, config, val_marker);
+    END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
     return;
   }
@@ -419,9 +422,10 @@ void CNEMOTurbSASolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_c
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool rough_wall = false;
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-  unsigned short WallType; su2double Roughness_Height;
+  WALL_TYPE WallType;
+  su2double Roughness_Height;
   tie(WallType, Roughness_Height) = config->GetWallRoughnessProperties(Marker_Tag);
-  if (WallType == ROUGH ) rough_wall = true;
+  if (WallType == WALL_TYPE::ROUGH) rough_wall = true;
 
   /*--- The dirichlet condition is used only without wall function, otherwise the
    convergence is compromised as we are providing nu tilde values for the
@@ -469,7 +473,6 @@ void CNEMOTurbSASolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_c
 
          su2double Res_Wall;// = new su2double [nVar];
          Res_Wall = coeff*RoughWallBC*Area;
-	 
          LinSysRes.SubtractBlock(iPoint, &Res_Wall);
 
          su2double Jacobian_i = (laminar_viscosity*Area)/(0.03*Roughness_Height*sigma);
@@ -478,6 +481,7 @@ void CNEMOTurbSASolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_c
       }
     }
   }
+  END_SU2_OMP_FOR
 }
 
 void CNEMOTurbSASolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
@@ -541,6 +545,7 @@ void CNEMOTurbSASolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_conta
 
     }
   }
+  END_SU2_OMP_FOR
 
 }
 
@@ -593,7 +598,7 @@ void CNEMOTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container
                                   geometry->nodes->GetGridVel(iPoint));
 
       /*--- Compute the residual using an upwind scheme ---*/
- 
+
       auto residual = conv_numerics->ComputeResidual(config);
       LinSysRes.AddBlock(iPoint, residual);
 
@@ -629,6 +634,7 @@ void CNEMOTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container
 
     }
   }
+  END_SU2_OMP_FOR
 
 }
 
@@ -805,6 +811,7 @@ void CNEMOTurbSASolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_c
     }
 
   }
+  END_SU2_OMP_FOR
 
 }
 
@@ -894,6 +901,7 @@ void CNEMOTurbSASolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_
 
     }
   }
+  END_SU2_OMP_FOR
 
 }
 
@@ -1045,6 +1053,7 @@ void CNEMOTurbSASolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_contain
 //        Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
 
   }
+  END_SU2_OMP_FOR
 
 }
 
@@ -1140,6 +1149,7 @@ void CNEMOTurbSASolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solv
       if (implicit) Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_i);
 
     }
+    END_SU2_OMP_FOR
   }
 
 }
@@ -1245,6 +1255,7 @@ void CNEMOTurbSASolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_con
       if (implicit) Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_i);
 
     }
+    END_SU2_OMP_FOR
   }
 
 }
@@ -1744,7 +1755,7 @@ void CNEMOTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry
   su2double cb1   = 0.1355, ct3 = 1.2, ct4   = 0.5;
   su2double sigma = 2./3., cb2 = 0.622, f_max=1.0, f_min=0.1, a1=0.15, a2=0.3;
   su2double cw1 = 0.0, Ji = 0.0, Ji_2 = 0.0, Ji_3 = 0.0, fv1 = 0.0, fv2 = 0.0, ft2 = 0.0, psi_2 = 0.0;
-  const su2double *coord_i = nullptr, *coord_j = nullptr, *const *primVarGrad = nullptr, *vorticity = nullptr;
+  const su2double *coord_i = nullptr, *coord_j = nullptr, *vorticity = nullptr;
   su2double delta[3] = {0.0}, ratioOmega[3] = {0.0}, vortexTiltingMeasure = 0.0;
 
   SU2_OMP_FOR_DYN(omp_chunk_size)
@@ -1753,7 +1764,7 @@ void CNEMOTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry
     coord_i                 = geometry->nodes->GetCoord(iPoint);
     nNeigh                  = geometry->nodes->GetnPoint(iPoint);
     wallDistance            = geometry->nodes->GetWall_Distance(iPoint);
-    primVarGrad             = solver[FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint);
+    const auto primVarGrad  = solver[FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint);
     vorticity               = solver[FLOW_SOL]->GetNodes()->GetVorticity(iPoint);
     density                 = solver[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
     laminarViscosity        = solver[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
@@ -1908,6 +1919,7 @@ void CNEMOTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry
     nodes->SetDES_LengthScale(iPoint, lengthScale);
 
   }
+  END_SU2_OMP_FOR
 }
 
 void CNEMOTurbSASolver::SetInletAtVertex(const su2double *val_inlet,
