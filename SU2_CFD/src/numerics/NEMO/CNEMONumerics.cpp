@@ -77,6 +77,55 @@ CNEMONumerics::CNEMONumerics(unsigned short val_nDim, unsigned short val_nVar,
     }
 }
 
+CNEMONumerics::CNEMONumerics(unsigned short val_nDim, unsigned short val_nVar,
+                             unsigned short val_nVar_NEMO,
+                             unsigned short val_nPrimVar,
+                             unsigned short val_nPrimVarGrad,
+                             const CConfig* config) :
+                             CNumerics(val_nDim, val_nVar, config) {
+
+    nSpecies     = val_nVar_NEMO - nDim - 2;
+    nPrimVar     = val_nPrimVar;
+    nPrimVarGrad = val_nPrimVarGrad;
+
+    hs.resize(nSpecies,0.0);
+
+    RHOS_INDEX      = 0;
+    T_INDEX         = nSpecies;
+    TVE_INDEX       = nSpecies+1;
+    VEL_INDEX       = nSpecies+2;
+    P_INDEX         = nSpecies+nDim+2;
+    RHO_INDEX       = nSpecies+nDim+3;
+    H_INDEX         = nSpecies+nDim+4;
+    A_INDEX         = nSpecies+nDim+5;
+    RHOCVTR_INDEX   = nSpecies+nDim+6;
+    RHOCVVE_INDEX   = nSpecies+nDim+7;
+    LAM_VISC_INDEX  = nSpecies+nDim+8;
+    EDDY_VISC_INDEX = nSpecies+nDim+9;
+
+    /*--- Read from CConfig ---*/
+    implicit   = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+
+    ionization = config->GetIonization();
+    if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
+    else            { nHeavy = nSpecies;   nEl = 0; }
+
+    /*--- Instatiate the correct fluid model ---*/
+    switch (config->GetKind_FluidModel()) {
+      case MUTATIONPP:
+        #if defined(HAVE_MPP) && !defined(CODI_REVERSE_TYPE) && !defined(CODI_FORWARD_TYPE)
+          fluidmodel = new CMutationTCLib(config, nDim);
+        #else
+          SU2_MPI::Error(string("Mutation++ has not been configured/compiled. Add 1) '-Denable-mpp=true' to your meson string or 2) '-DHAVE_MPP' to the CXX FLAGS of your configure string, and recompile."),
+          CURRENT_FUNCTION);
+        #endif    
+      break;
+      case SU2_NONEQ:
+        fluidmodel = new CSU2TCLib(config, nDim, false);
+      break;
+    }
+}
+
 CNEMONumerics::~CNEMONumerics(void) {
 
   delete fluidmodel;

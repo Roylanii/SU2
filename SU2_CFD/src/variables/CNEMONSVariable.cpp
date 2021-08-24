@@ -26,6 +26,8 @@
  */
 
 #include "../../include/variables/CNEMONSVariable.hpp"
+#include "../../../Common/include/parallelization/omp_structure.hpp"
+#include "../../include/fluid/CFluidModel.hpp"
 #include <math.h>
 
 CNEMONSVariable::CNEMONSVariable(su2double val_pressure,

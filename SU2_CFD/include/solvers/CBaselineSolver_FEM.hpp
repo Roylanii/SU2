@@ -47,6 +47,7 @@ protected:
   vector<su2double> VecSolDOFs;    /*!< \brief Vector, which stores the solution variables in all the DOFs. */
 
   CVariable* GetBaseClassPointerToNodes() override {return nullptr;}
+  CVariable* GetBaseClassPointerToNodeInfty() override { return nullptr; } //TODO Delete me
 
 public:
 

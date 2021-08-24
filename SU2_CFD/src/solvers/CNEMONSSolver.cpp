@@ -41,6 +41,7 @@ CNEMONSSolver::CNEMONSSolver(CGeometry *geometry, CConfig *config, unsigned shor
   Viscosity_Inf      = config->GetViscosity_FreeStreamND();
   Prandtl_Lam        = config->GetPrandtl_Lam();
   Prandtl_Turb       = config->GetPrandtl_Turb();
+  Tke_Inf            = config->GetTke_FreeStreamND();
 
   /*--- Initialize the secondary values for direct derivative approxiations ---*/
   switch(config->GetDirectDiff()) {
@@ -68,6 +69,17 @@ void CNEMONSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
 
   CommonPreprocessing(geometry, solver_container, config, iMesh, iRKStep, RunTime_EqSystem, Output);
 
+  /*--- Compute gradient for MUSCL reconstruction, for output (i.e. the
+   turbulence solver, and post) only temperature and velocity are needed ---*/
+
+  const auto nPrimVarGrad_bak = nPrimVarGrad;
+  if (Output) {
+    SU2_OMP_BARRIER
+    SU2_OMP_MASTER
+    nPrimVarGrad = 2+nDim;
+    SU2_OMP_BARRIER
+  }
+
   /*--- Compute gradient for MUSCL reconstruction. ---*/
 
   if (config->GetReconstructionGradientRequired() && muscl && !center) {
@@ -90,6 +102,12 @@ void CNEMONSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
     SetPrimitive_Gradient_LS(geometry, config);
   }
 
+  if (Output) {
+    SU2_OMP_MASTER
+    nPrimVarGrad = nPrimVarGrad_bak;
+    SU2_OMP_BARRIER
+  }
+
   /*--- Compute the limiters ---*/
 
   if (muscl && !center && limiter && !van_albada && !Output) {
@@ -110,18 +128,18 @@ unsigned long CNEMONSSolver::SetPrimitive_Variables(CSolver **solver_container,C
   unsigned long nonPhysicalPoints = 0;
 
   const unsigned short turb_model = config->GetKind_Turb_Model();
-  //const bool tkeNeeded = (turb_model == SST) || (turb_model == SST_SUST);
+  const bool tkeNeeded = (turb_model == SST) || (turb_model == SST_SUST);
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {
 
     /*--- Retrieve the value of the kinetic energy (if needed). ---*/
 
-    su2double eddy_visc = 0.0; //su2double turb_ke = 0.0;
+    su2double eddy_visc = 0.0, turb_ke = 0.0;
 
     if (turb_model != NONE && solver_container[TURB_SOL] != nullptr) {
       eddy_visc = solver_container[TURB_SOL]->GetNodes()->GetmuT(iPoint);
-      //if (tkeNeeded) turb_ke = solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0);
+      if (tkeNeeded) turb_ke = solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0);
 
       nodes->SetEddyViscosity(iPoint, eddy_visc);
     }
@@ -261,6 +279,8 @@ void CNEMONSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
                                                  unsigned short val_marker) {
 
   /*--- Local variables ---*/
+  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+
   const auto Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   su2double Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag)/config->GetHeat_Flux_Ref();
 

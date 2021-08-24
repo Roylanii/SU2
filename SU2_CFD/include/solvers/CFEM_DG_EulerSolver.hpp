@@ -269,6 +269,7 @@ private:
                                                  intensive part of the solver. */
 
   CVariable* GetBaseClassPointerToNodes() final {return nullptr;}
+  CVariable* GetBaseClassPointerToNodeInfty() override { return nullptr; } //TODO Delete me
 
 public:
 

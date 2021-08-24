@@ -35,6 +35,8 @@
 #include "../../include/solvers/CNEMONSSolver.hpp"
 #include "../../include/solvers/CTurbSASolver.hpp"
 #include "../../include/solvers/CTurbSSTSolver.hpp"
+#include "../../include/solvers/CNEMOTurbSASolver.hpp"
+#include "../../include/solvers/CNEMOTurbSSTSolver.hpp"
 #include "../../include/solvers/CTransLMSolver.hpp"
 #include "../../include/solvers/CAdjEulerSolver.hpp"
 #include "../../include/solvers/CAdjNSSolver.hpp"
@@ -95,6 +97,10 @@ CSolver** CSolverFactory::CreateSolverContainer(ENUM_MAIN_SOLVER kindMainSolver,
       solver[TURB_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::TURB, solver, geometry, config, iMGLevel);
       solver[RAD_SOL]  = CreateSubSolver(SUB_SOLVER_TYPE::RADIATION, solver, geometry, config, iMGLevel);
       break;
+    case NEMO_RANS:
+      solver[FLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::NEMO_NAVIER_STOKES, solver, geometry, config, iMGLevel);
+      solver[TURB_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::NEMO_TURB, solver, geometry, config, iMGLevel);
+      break;
     case HEAT_EQUATION:
       solver[HEAT_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::HEAT, solver, geometry, config, iMGLevel);
       break;
@@ -149,6 +155,20 @@ CSolver** CSolverFactory::CreateSolverContainer(ENUM_MAIN_SOLVER kindMainSolver,
       solver[ADJTURB_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_TURB, solver, geometry, config, iMGLevel);
       solver[RAD_SOL]     = CreateSubSolver(SUB_SOLVER_TYPE::RADIATION, solver, geometry, config, iMGLevel);
       solver[ADJRAD_SOL]  = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_RADIATION, solver, geometry, config, iMGLevel);
+      break;
+    case DISC_ADJ_NEMO_EULER:
+      solver[FLOW_SOL]    = CreateSubSolver(SUB_SOLVER_TYPE::NEMO_EULER, solver, geometry, config, iMGLevel);
+      solver[ADJFLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_FLOW, solver, geometry, config, iMGLevel);
+      break;
+    case DISC_ADJ_NEMO_NAVIER_STOKES:
+      solver[FLOW_SOL]    = CreateSubSolver(SUB_SOLVER_TYPE::NEMO_NAVIER_STOKES, solver, geometry, config, iMGLevel);
+      solver[ADJFLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_FLOW, solver, geometry, config, iMGLevel);
+      break;
+    case DISC_ADJ_NEMO_RANS:
+      solver[FLOW_SOL]    = CreateSubSolver(SUB_SOLVER_TYPE::NEMO_NAVIER_STOKES, solver, geometry, config, iMGLevel);
+      solver[ADJFLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_FLOW, solver, geometry, config, iMGLevel);
+      solver[TURB_SOL]    = CreateSubSolver(SUB_SOLVER_TYPE::TURB, solver, geometry, config, iMGLevel);
+      solver[ADJTURB_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_TURB, solver, geometry, config, iMGLevel);
       break;
     case DISC_ADJ_HEAT:
       solver[HEAT_SOL]    = CreateSubSolver(SUB_SOLVER_TYPE::HEAT, solver, geometry, config, iMGLevel);
@@ -212,11 +232,11 @@ CSolver* CSolverFactory::CreateSubSolver(SUB_SOLVER_TYPE kindSolver, CSolver **s
       metaData.integrationType = INTEGRATION_TYPE::MULTIGRID;
       break;
     case SUB_SOLVER_TYPE::CONT_ADJ_TURB:
-      genericSolver = CreateTurbSolver(kindTurbModel, solver, geometry, config, iMGLevel, true);
+      genericSolver = CreateTurbSolver(kindTurbModel, solver, geometry, config, iMGLevel, true, false);
       metaData.integrationType = INTEGRATION_TYPE::SINGLEGRID;
       break;
     case SUB_SOLVER_TYPE::DISC_ADJ_TURB:
-      genericSolver = CreateTurbSolver(kindTurbModel, solver, geometry, config, iMGLevel, true);
+      genericSolver = CreateTurbSolver(kindTurbModel, solver, geometry, config, iMGLevel, true, false );
       metaData.integrationType = INTEGRATION_TYPE::DEFAULT;
       break;
     case SUB_SOLVER_TYPE::BASELINE:
@@ -276,10 +296,12 @@ CSolver* CSolverFactory::CreateSubSolver(SUB_SOLVER_TYPE kindSolver, CSolver **s
       genericSolver = new CTransLMSolver(geometry, config, iMGLevel);
       metaData.integrationType = INTEGRATION_TYPE::SINGLEGRID;
       break;
-    case SUB_SOLVER_TYPE::TURB:
-    case SUB_SOLVER_TYPE::TURB_SA:
-    case SUB_SOLVER_TYPE::TURB_SST:
-      genericSolver = CreateTurbSolver(kindTurbModel, solver, geometry, config, iMGLevel, false);
+    case SUB_SOLVER_TYPE::TURB: case SUB_SOLVER_TYPE::TURB_SA: case SUB_SOLVER_TYPE::TURB_SST:
+      genericSolver = CreateTurbSolver(kindTurbModel, solver, geometry, config, iMGLevel, false, false);
+      metaData.integrationType = INTEGRATION_TYPE::SINGLEGRID;
+      break;
+    case SUB_SOLVER_TYPE::NEMO_TURB:
+      genericSolver = CreateTurbSolver(kindTurbModel, solver, geometry, config, iMGLevel, false, true);
       metaData.integrationType = INTEGRATION_TYPE::SINGLEGRID;
       break;
     case SUB_SOLVER_TYPE::TEMPLATE:
@@ -310,19 +332,25 @@ CSolver* CSolverFactory::CreateSubSolver(SUB_SOLVER_TYPE kindSolver, CSolver **s
 
 }
 
-CSolver* CSolverFactory::CreateTurbSolver(ENUM_TURB_MODEL kindTurbModel, CSolver **solver, CGeometry *geometry, CConfig *config, int iMGLevel, int adjoint){
+CSolver* CSolverFactory::CreateTurbSolver(ENUM_TURB_MODEL kindTurbModel, CSolver **solver, CGeometry *geometry, CConfig *config, int iMGLevel, int adjoint, int nemo){
 
   CSolver *turbSolver = nullptr;
 
   if (!adjoint){
     switch (kindTurbModel) {
       case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
-        turbSolver = new CTurbSASolver(geometry, config, iMGLevel, solver[FLOW_SOL]->GetFluidModel());
+        if (nemo){
+          turbSolver = new CNEMOTurbSASolver(geometry, config, iMGLevel, solver[FLOW_SOL]->GetFluidModel());}
+        else {
+          turbSolver = new CTurbSASolver(geometry, config, iMGLevel, solver[FLOW_SOL]->GetFluidModel());}
         solver[FLOW_SOL]->Preprocessing(geometry, solver, config, iMGLevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
         turbSolver->Postprocessing(geometry, solver, config, iMGLevel);
         break;
       case SST: case SST_SUST:
-        turbSolver = new CTurbSSTSolver(geometry, config, iMGLevel);
+        if (nemo){
+          turbSolver = new CNEMOTurbSSTSolver(geometry, config, iMGLevel);}
+        else{
+          turbSolver = new CTurbSSTSolver(geometry, config, iMGLevel);}
         solver[FLOW_SOL]->Preprocessing(geometry, solver, config, iMGLevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
         turbSolver->Postprocessing(geometry, solver, config, iMGLevel);
         solver[FLOW_SOL]->Preprocessing(geometry, solver, config, iMGLevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);

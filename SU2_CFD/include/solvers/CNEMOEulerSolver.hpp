@@ -64,6 +64,11 @@ protected:
   CNEMOEulerVariable* node_infty = nullptr;
 
   /*!
+   * \brief Return nodes to allow CSolver::base_node_infty to be set.
+   */
+  inline CVariable* GetBaseClassPointerToNodeInfty() final { return node_infty; }
+
+  /*!
    * \brief Set the maximum value of the eigenvalue.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.

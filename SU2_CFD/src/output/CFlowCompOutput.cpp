@@ -335,6 +335,7 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutput("HEAT_FLUX", "Heat_Flux", "PRIMITIVE", "Heat-flux");
     AddVolumeOutput("Y_PLUS", "Y_Plus", "PRIMITIVE", "Non-dim. wall distance (Y-Plus)");
 
+    AddVolumeOutput("THERMAL_COND", "k", "PRIMITIVE", "k");
   }
 
   if (config->GetKind_Solver() == RANS) {
@@ -477,6 +478,7 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
 
   if (config->GetKind_Solver() == RANS || config->GetKind_Solver() == NAVIER_STOKES){
     SetVolumeOutputValue("LAMINAR_VISCOSITY", iPoint, Node_Flow->GetLaminarViscosity(iPoint));
+    SetVolumeOutputValue("THERMAL_COND", iPoint, Node_Flow->GetThermalConductivity(iPoint));
   }
 
   if (config->GetKind_Solver() == RANS) {

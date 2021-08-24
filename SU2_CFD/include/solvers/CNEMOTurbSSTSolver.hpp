@@ -1,7 +1,7 @@
-/*!
- * \file CTemplateSolver.hpp
- * \brief Headers of the CTemplateSolver class
- * \author F. Palacios
+﻿/*!
+ * \file CNEMOTurbSSTSolver.hpp
+ * \brief Headers of the CNEMOTurbSSTSolver class
+ * \author A. Campos, F. Palacios, T. Economon
  * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -27,46 +27,40 @@
 
 #pragma once
 
-#include "CSolver.hpp"
+#include "CNEMOTurbSolver.hpp"
 
 /*!
- * \class CTemplateSolver
- * \brief Main class for defining the template model solver.
- * \ingroup Template_Flow_Equation
- * \author F. Palacios
+ * \class CNEMOTurbSSTSolver
+ * \brief Main class for defining the turbulence model solver.
+ * \ingroup Turbulence_Model
+ * \author A. Campos, F. Palacios, T. Economon
  */
-class CTemplateSolver final : public CSolver {
+class CNEMOTurbSSTSolver final : public CNEMOTurbSolver {
 private:
-
-  CVariable* nodes = nullptr;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
-
-  /*!
-   * \brief Return nodes to allow CSolver::base_nodes to be set.
-   */
-  inline CVariable* GetBaseClassPointerToNodes() override { return nodes; }
-  inline CVariable* GetBaseClassPointerToNodeInfty() override { return nodes; } //TODO Delete me
+  su2double
+  constants[10] = {0.0}; /*!< \brief Constants for the model. */
 
 public:
-
   /*!
    * \brief Constructor of the class.
    */
-  CTemplateSolver(void);
+  CNEMOTurbSSTSolver(void);
 
   /*!
    * \overload
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  CTemplateSolver(CGeometry *geometry, CConfig *config);
+  CNEMOTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh);
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CTemplateSolver(void) override;
+  ~CNEMOTurbSSTSolver() = default;
 
   /*!
-   * \brief Compute the velocity^2, SoundSpeed, Pressure.
+   * \brief Restart residual and compute gradients.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
@@ -84,51 +78,19 @@ public:
                      bool Output) override;
 
   /*!
-   * \brief Compute the time step for solving the Euler equations.
+   * \brief Computes the eddy viscosity.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
-   * \param[in] Iteration - Index of the current iteration.
    */
-  void SetTime_Step(CGeometry *geometry,
-                    CSolver **solver_container,
-                    CConfig *config,
-                    unsigned short iMesh,
-                    unsigned long Iteration) override;
+  void Postprocessing(CGeometry *geometry,
+                      CSolver **solver_container,
+                      CConfig *config,
+                      unsigned short iMesh) override;
 
   /*!
-   * \brief Compute the spatial integration using a centered scheme.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics_container - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
-   */
-  void Centered_Residual(CGeometry *geometry,
-                         CSolver **solver_container,
-                         CNumerics **numerics_container,
-                         CConfig *config,
-                         unsigned short iMesh,
-                         unsigned short iRKStep) override;
-
-  /*!
-   * \brief Compute the spatial integration using a upwind scheme.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics_container - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   */
-  void Upwind_Residual(CGeometry *geometry,
-                       CSolver **solver_container,
-                       CNumerics **numerics_container,
-                       CConfig *config,
-                       unsigned short iMesh) override;
-
-  /*!
-   * \brief Source term integration.
+   * \brief Source term computation.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] numerics_container - Description of the numerical method.
@@ -142,7 +104,7 @@ public:
                        unsigned short iMesh) override;
 
   /*!
-   * \brief Source term integration.
+   * \brief Source term computation.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] numerics - Description of the numerical method.
@@ -156,22 +118,7 @@ public:
                        unsigned short iMesh) override;
 
   /*!
-   * \brief Impose via the residual the Euler wall boundary condition.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   */
-  void BC_Euler_Wall(CGeometry      *geometry,
-                     CSolver        **solver_container,
-                     CNumerics      *conv_numerics,
-                     CNumerics      *visc_numerics,
-                     CConfig        *config,
-                     unsigned short val_marker) override;
-
-  /*!
-   * \brief Impose the Navier-Stokes boundary condition (strong).
+   * \brief Impose the Navier-Stokes wall boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] conv_numerics - Description of the numerical method.
@@ -186,7 +133,23 @@ public:
                         CConfig *config,
                         unsigned short val_marker) override;
   /*!
-   * \brief Impose the far-field boundary condition.
+   * \brief Impose the Navier-Stokes wall boundary condition.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_Isothermal_Wall(CGeometry *geometry,
+                          CSolver **solver_container,
+                          CNumerics *conv_numerics,
+                          CNumerics *visc_numerics,
+                          CConfig *config,
+                          unsigned short val_marker) override;
+
+  /*!
+   * \brief Impose the Far Field boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] conv_numerics - Description of the numerical method.
@@ -216,6 +179,38 @@ public:
                 CNumerics *visc_numerics,
                 CConfig *config,
                 unsigned short val_marker) override;
+
+  /*!
+   * \brief Impose the inlet boundary condition.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_Inlet_Turbo(CGeometry *geometry,
+                      CSolver **solver_container,
+                      CNumerics *conv_numerics,
+                      CNumerics *visc_numerics,
+                      CConfig *config,
+                      unsigned short val_marker) override;
+
+  /*!
+   * \brief Impose the inlet boundary condition.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_Inlet_MixingPlane(CGeometry *geometry,
+                            CSolver **solver_container,
+                            CNumerics *conv_numerics,
+                            CNumerics *visc_numerics,
+                            CConfig *config,
+                            unsigned short val_marker) override;
   /*!
    * \brief Impose the outlet boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -231,68 +226,59 @@ public:
                  CNumerics *visc_numerics,
                  CConfig *config,
                  unsigned short val_marker) override;
-  /*!
-   * \brief Impose the symmetry plane boundary condition.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] conv_numerics - Description of the numerical method.
-   * \param[in] visc_numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   */
-  void BC_Sym_Plane(CGeometry      *geometry,
-                    CSolver        **solver_container,
-                    CNumerics      *conv_numerics,
-                    CNumerics      *visc_numerics,
-                    CConfig        *config,
-                    unsigned short val_marker) override;
 
   /*!
-   * \brief Impose a custom or verification boundary condition.
-   * \param[in] geometry         - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] conv_numerics    - Description of the convective numerical method.
-   * \param[in] visc_numerics    - Description of the viscous numerical method.
-   * \param[in] config           - Definition of the particular problem.
-   * \param[in] val_marker       - Surface marker where the boundary condition is applied.
+   * \brief Get the constants for the SST model.
+   * \return A pointer to an array containing a set of constants
    */
-  void BC_Custom(CGeometry *geometry,
-                 CSolver **solver_container,
-                 CNumerics *conv_numerics,
-                 CNumerics *visc_numerics,
-                 CConfig *config,
-                 unsigned short val_marker) override;
+  inline const su2double* GetConstants() const override { return constants; }
 
   /*!
-   * \brief Update the solution using a Runge-Kutta scheme.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   * \brief Store of a set of provided inlet profile values at a vertex.
+   * \param[in] val_inlet - vector containing the inlet values for the current vertex.
+   * \param[in] iMarker - Surface marker where the coefficient is computed.
+   * \param[in] iVertex - Vertex of the marker <i>iMarker</i> where the inlet is being set.
    */
-  void ExplicitRK_Iteration(CGeometry *geometry,
-                            CSolver **solver_container,
-                            CConfig *config,
-                            unsigned short iRKStep) override;
+  void SetInletAtVertex(const su2double *val_inlet,
+                        unsigned short iMarker,
+                        unsigned long iVertex) override;
 
   /*!
-   * \brief Update the solution using a explicit Euler scheme.
+   * \brief Get the set of value imposed at an inlet.
+   * \param[in] val_inlet - vector returning the inlet values for the current vertex.
+   * \param[in] val_inlet_point - Node index where the inlet is being set.
+   * \param[in] val_kind_marker - Enumerated type for the particular inlet type.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
+   * \param config - Definition of the particular problem.
+   * \return Value of the face area at the vertex.
    */
-  void ExplicitEuler_Iteration(CGeometry *geometry,
-                               CSolver **solver_container,
-                               CConfig *config) override;
+  su2double GetInletAtVertex(su2double *val_inlet,
+                             unsigned long val_inlet_point,
+                             unsigned short val_kind_marker,
+                             string val_marker,
+                             const CGeometry *geometry,
+                             const CConfig *config) const override;
+  /*!
+   * \brief Set a uniform inlet profile
+   *
+   * The values at the inlet are set to match the values specified for
+   * inlets in the configuration file.
+   *
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMarker - Surface marker where the coefficient is computed.
+   */
+  void SetUniformInlet(const CConfig* config, unsigned short iMarker) override;
 
   /*!
-   * \brief Update the solution using an implicit solver.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
+   * \brief Get the value of the turbulent kinetic energy.
+   * \return Value of the turbulent kinetic energy.
    */
-  void ImplicitEuler_Iteration(CGeometry *geometry,
-                               CSolver **solver_container,
-                               CConfig *config) override;
+  inline su2double GetTke_Inf(void) const override { return Solution_Inf[0]; }
+
+  /*!
+   * \brief Get the value of the turbulent frequency.
+   * \return Value of the turbulent frequency.
+   */
+  inline su2double GetOmega_Inf(void) const override { return Solution_Inf[1]; }
 
 };
