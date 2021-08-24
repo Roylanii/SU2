@@ -237,6 +237,7 @@ void CNEMOTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_cont
         auto Laminar_Viscosity  = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
         nodes->SetVortex_Tilting(iPoint, PrimGrad_Flow, Vorticity, Laminar_Viscosity);
       }
+      END_SU2_OMP_FOR
     }
 
     /*--- Compute the DES length scale ---*/
@@ -282,6 +283,7 @@ void CNEMOTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_con
     nodes->SetmuT(iPoint,muT);
 
   }
+  END_SU2_OMP_FOR
 
 }
 
@@ -289,7 +291,7 @@ void CNEMOTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_co
                                     CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  const bool harmonic_balance = (config->GetTime_Marching() == HARMONIC_BALANCE);
+  const bool harmonic_balance = (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE);
   const bool transition    = (config->GetKind_Trans_Model() == LM);
   const bool transition_BC = (config->GetKind_Trans_Model() == BC);
 
