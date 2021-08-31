@@ -86,7 +86,7 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
     filename_ = config->GetFilename(filename_, ".meta", Unst_RestartIter);
 
     /*--- Read and store the restart metadata ---*/
-    Read_SU2_Restart_Metadata(geometry, config, false, filename_);
+    Read_SU2_Restart_Metadata(geometry, config, adjoint, filename_);
 
   }
 
@@ -104,7 +104,7 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
   // Viscous: append [mu, mu_t]^T
   nVar         = nSpecies + nDim + 2;
   if (navier_stokes) { nPrimVar   = nSpecies + nDim + 10; }
-  else {               nPrimVar   = nSpecies +nDim +8;    }
+  else               { nPrimVar   = nSpecies + nDim + 8;  }
   nPrimVarGrad = nSpecies + nDim + 8;
 
   /*--- Initialize nVarGrad for deallocation ---*/

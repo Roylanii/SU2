@@ -113,8 +113,13 @@ void CNEMONSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
   if (muscl && !center && limiter && !van_albada && !Output) {
     SetPrimitive_Limiter(geometry, config);
   }
+
+  /*--- Compute vorticity and strain mag. ---*/
+
   const long unsigned int offset=(nSpecies+2);
   ComputeVorticityAndStrainMag(*config, iMesh, offset);
+
+  /*--- Compute the TauWall from the wall functions ---*/
 
   if (wall_functions) {
     SetTauWall_WF(geometry, solver_container, config);
@@ -140,7 +145,6 @@ unsigned long CNEMONSSolver::SetPrimitive_Variables(CSolver **solver_container,C
     if (turb_model != NONE && solver_container[TURB_SOL] != nullptr) {
       eddy_visc = solver_container[TURB_SOL]->GetNodes()->GetmuT(iPoint);
       if (tkeNeeded) turb_ke = solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0);
-      eddy_visc = 9e-6;
       nodes->SetEddyViscosity(iPoint, eddy_visc);
     }
 
@@ -355,10 +359,9 @@ void CNEMONSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
     su2double zero[MAXNDIM] = {0.0};
     nodes->SetVelocity_Old(iPoint, zero);
 
-    for (auto iDim = 0u; iDim < nDim; iDim++){
+    for (auto iDim = 0u; iDim < nDim; iDim++)
       LinSysRes(iPoint, nSpecies+iDim) = 0.0;
-      nodes->SetVal_ResTruncError_Zero(iPoint,nSpecies+iDim);
-    }
+    nodes->SetVel_ResTruncError_Zero(iPoint);
 
     /*--- Apply viscous residual to the linear system ---*/
     LinSysRes.SubtractBlock(iPoint, Res_Visc);
@@ -661,10 +664,9 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
     /*--- Initialize viscous residual to zero ---*/
     for (auto iVar = 0u; iVar < nVar; iVar ++) {Res_Visc[iVar] = 0.0;}
 
-    for (auto iDim = 0u; iDim < nDim; iDim++){
+    for (auto iDim = 0u; iDim < nDim; iDim++)
       LinSysRes(iPoint, nSpecies+iDim) = 0.0;
-      nodes->SetVal_ResTruncError_Zero(iPoint,nSpecies+iDim);
-    }
+  nodes->SetVal_ResTruncError_Zero(iPoint);
 
     /*--- Calculate the gradient of temperature ---*/
     su2double Ti   = nodes->GetTemperature(iPoint);
@@ -1016,7 +1018,7 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
     su2double Mass = 0.0;
     for (auto iSpecies=0u; iSpecies<nSpecies; iSpecies++)
       Mass += Vi[iSpecies]*Ms[iSpecies];
-    su2double Cptr = rhoCvtr + Ru/Mass;
+    su2double Cptr = rhoCvtr/rho + Ru/Mass;
     su2double tmp1 = Cptr*(Eddy_Visc/Prandtl_Turb);
     su2double scl  = tmp1/ktr;
     ktr += Cptr*(Eddy_Visc/Prandtl_Turb);
