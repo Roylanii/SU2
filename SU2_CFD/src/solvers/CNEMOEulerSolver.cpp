@@ -1843,61 +1843,61 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 	break;
       
         /*--- Mass flow has been specified at the inlet. ---*/
-      case INLET_TYPE::MASS_FLOW:
-
+//      case INLET_TYPE::MASS_FLOW:
+//
         /*--- Retrieve the specified mass flow for the inlet. ---*/
-        Density  = config->GetInlet_Ttotal(Marker_Tag);
-        Vel_Mag  = config->GetInlet_Ptotal(Marker_Tag);
-        Flow_Dir = config->GetInlet_FlowDir(Marker_Tag);
+//        Density  = config->GetInlet_Ttotal(Marker_Tag);
+//        Vel_Mag  = config->GetInlet_Ptotal(Marker_Tag);
+//        Flow_Dir = config->GetInlet_FlowDir(Marker_Tag);
 
         /*--- Non-dim. the inputs if necessary. ---*/
-        Density /= config->GetDensity_Ref();
-        Vel_Mag /= config->GetVelocity_Ref();
+//        Density /= config->GetDensity_Ref();
+//        Vel_Mag /= config->GetVelocity_Ref();
 
         /*--- Get primitives from current inlet state. ---*/
-        for (iDim = 0; iDim < nDim; iDim++)
-          Velocity[iDim] = nodes->GetVelocity(iPoint, iDim);
-        Pressure    = nodes->GetPressure(iPoint);
-        SoundSpeed2 = Gamma*Pressure/U_domain[0];
+//        for (iDim = 0; iDim < nDim; iDim++)
+//          Velocity[iDim] = nodes->GetVelocity(iPoint, iDim);
+//        Pressure    = nodes->GetPressure(iPoint);
+//        SoundSpeed2 = Gamma*Pressure/U_domain[0];
 
         /*--- Compute the acoustic Riemann invariant that is extrapolated
            from the domain interior. ---*/
-        Riemann = Two_Gamma_M1*sqrt(SoundSpeed2);
-        for (iDim = 0; iDim < nDim; iDim++)
-          Riemann += Velocity[iDim]*UnitNormal[iDim];
+//        Riemann = Two_Gamma_M1*sqrt(SoundSpeed2);
+//        for (iDim = 0; iDim < nDim; iDim++)
+///          Riemann += Velocity[iDim]*UnitNormal[iDim];
 
         /*--- Speed of sound squared for fictitious inlet state ---*/
-        SoundSpeed2 = Riemann;
-        for (iDim = 0; iDim < nDim; iDim++)
-          SoundSpeed2 -= Vel_Mag*Flow_Dir[iDim]*UnitNormal[iDim];
-
-        SoundSpeed2 = max(0.0,0.5*Gamma_Minus_One*SoundSpeed2);
-        SoundSpeed2 = SoundSpeed2*SoundSpeed2;
+//        SoundSpeed2 = Riemann;
+//        for (iDim = 0; iDim < nDim; iDim++)
+//          SoundSpeed2 -= Vel_Mag*Flow_Dir[iDim]*UnitNormal[iDim];
+//
+//        SoundSpeed2 = max(0.0,0.5*Gamma_Minus_One*SoundSpeed2);
+//        SoundSpeed2 = SoundSpeed2*SoundSpeed2;
 
         /*--- Pressure for the fictitious inlet state ---*/
-        Pressure = SoundSpeed2*Density/Gamma;
+//        Pressure = SoundSpeed2*Density/Gamma;
 
         /*--- Energy for the fictitious inlet state ---*/
-        Energy = Pressure/(Density*Gamma_Minus_One)+0.5*Vel_Mag*Vel_Mag;
+//        Energy = Pressure/(Density*Gamma_Minus_One)+0.5*Vel_Mag*Vel_Mag;
 
         /*--- Conservative variables, using the derived quantities ---*/
-        U_inlet[0] = Density;
-        for (iDim = 0; iDim < nDim; iDim++)
-          U_inlet[iDim+1] = Vel_Mag*Flow_Dir[iDim]*Density;
-        U_inlet[nDim+1] = Energy*Density;
+//        U_inlet[0] = Density;
+//        for (iDim = 0; iDim < nDim; iDim++)
+//          U_inlet[iDim+1] = Vel_Mag*Flow_Dir[iDim]*Density;
+//        U_inlet[nDim+1] = Energy*Density;
 
         /*--- Primitive variables, using the derived quantities ---*/
-        V_inlet[0] = Pressure / ( Gas_Constant * Density);
-        for (iDim = 0; iDim < nDim; iDim++)
-          V_inlet[iDim+1] = Vel_Mag*Flow_Dir[iDim];
-        V_inlet[nDim+1] = Pressure;
-        V_inlet[nDim+2] = Density;
+//        V_inlet[0] = Pressure / ( Gas_Constant * Density);
+//        for (iDim = 0; iDim < nDim; iDim++)
+//          V_inlet[iDim+1] = Vel_Mag*Flow_Dir[iDim];
+//        V_inlet[nDim+1] = Pressure;
+//        V_inlet[nDim+2] = Density;
 
-        break;
+//        break;
 
-      default:
-        SU2_MPI::Error("Unsupported INLET_TYPE.", CURRENT_FUNCTION);
-        break;
+//      default:
+//        SU2_MPI::Error("Unsupported INLET_TYPE.", CURRENT_FUNCTION);
+//        break;
       }
 
       /*--- Set various quantities in the solver class ---*/

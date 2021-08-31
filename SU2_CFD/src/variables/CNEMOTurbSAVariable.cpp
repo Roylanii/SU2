@@ -51,7 +51,7 @@ CNEMOTurbSAVariable::CNEMOTurbSAVariable(su2double val_nu_tilde, su2double val_m
   Vortex_Tilting.resize(nPoint);
 }
 
-void CTurbSAVariable::SetVortex_Tilting(unsigned long iPoint, CMatrixView<const su2double> PrimGrad_Flow,
+void CNEMOTurbSAVariable::SetVortex_Tilting(unsigned long iPoint, CMatrixView<const su2double> PrimGrad_Flow,
                                         const su2double* Vorticity, su2double LaminarViscosity) {
 
   su2double Strain[3][3] = {{0,0,0}, {0,0,0}, {0,0,0}}, Omega, StrainDotVort[3], numVecVort[3];

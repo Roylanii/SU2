@@ -88,9 +88,6 @@ CNumerics::ResidualType<> CNEMOAvgGrad_Scalar::ComputeResidual(const CConfig* co
   Laminar_Viscosity_i = V_i[LAM_VISC_INDEX];  Laminar_Viscosity_j = V_j[LAM_VISC_INDEX];
   Eddy_Viscosity_i    = V_i[EDDY_VISC_INDEX]; Eddy_Viscosity_j    = V_j[EDDY_VISC_INDEX];
 
-
-  }
-
   proj_vector_ij = ComputeProjectedGradient(nDim, nVar, Normal, Coord_i, Coord_j, TurbVar_Grad_i,
                                             TurbVar_Grad_j, correct_gradient, TurbVar_i, TurbVar_j,
                                             Proj_Mean_GradTurbVar_Normal, Proj_Mean_GradTurbVar);
