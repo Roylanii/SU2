@@ -37,6 +37,13 @@
  */
 class CNEMONSVariable final : public CNEMOEulerVariable {
 private:
+  su2double inv_TimeScale;      /*!< \brief Inverse of the reference time scale. */
+
+  VectorType Tau_Wall;          /*!< \brief Magnitude of the wall shear stress from a wall function. */
+  VectorType DES_LengthScale;   /*!< \brief DES Length Scale. */
+  VectorType Roe_Dissipation;   /*!< \brief Roe low dissipation coefficient. */
+  VectorType Vortex_Tilting;    /*!< \brief Value of the vortex tilting variable for DES length scale computation. */
+
   VectorType Prandtl_Lam;       /*!< \brief Laminar Prandtl number. */
   VectorType Temperature_Ref;   /*!< \brief Reference temperature of the fluid. */
   VectorType Viscosity_Ref;     /*!< \brief Reference viscosity of the fluid. */
@@ -49,12 +56,7 @@ private:
   vector<su2double> thermalconductivities;
   vector<su2double> Ds;
 
-  su2double inv_TimeScale;      /*!< \brief Inverse of the reference time scale. */
 
-  VectorType Tau_Wall;          /*!< \brief Magnitude of the wall shear stress from a wall function. */
-  VectorType DES_LengthScale;   /*!< \brief DES Length Scale. */
-  VectorType Roe_Dissipation;   /*!< \brief Roe low dissipation coefficient. */
-  VectorType Vortex_Tilting;    /*!< \brief Value of the vortex tilting variable for DES length scale computation. */
 
 public:
 
@@ -104,7 +106,7 @@ public:
   /*!
    * \brief Set all the primitive variables for compressible flows.
    */
-  bool SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) final;
+  bool SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel) final;
 
   /*!
    * \brief Set the vorticity value.
