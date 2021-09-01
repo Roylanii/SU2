@@ -107,7 +107,7 @@ bool CNEMONSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2d
 
   /*--- Convert conserved to primitive variables ---*/
   bool nonPhys = Cons2PrimVar(Solution[iPoint], Primitive[iPoint], dPdU[iPoint], dTdU[iPoint], dTvedU[iPoint], eves[iPoint],
-                              Cvves[iPoint], eddy_visc, turb_ke);
+                              Cvves[iPoint], turb_ke);
 
   /*--- Reset solution to previous one, if nonphys ---*/
   if (nonPhys) {
@@ -116,7 +116,7 @@ bool CNEMONSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2d
 
     /*--- Recompute Primitive from previous solution ---*/
     Cons2PrimVar(Solution[iPoint], Primitive[iPoint], dPdU[iPoint], dTdU[iPoint], dTvedU[iPoint], eves[iPoint],
-                 Cvves[iPoint], eddy_visc, turb_ke);
+                 Cvves[iPoint], turb_ke);
   }
 
   /*--- Set additional point quantities ---*/

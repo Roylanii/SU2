@@ -144,13 +144,14 @@ unsigned long CNEMONSSolver::SetPrimitive_Variables(CSolver **solver_container,C
 
     if (turb_model != NONE && solver_container[TURB_SOL] != nullptr) {
       eddy_visc = solver_container[TURB_SOL]->GetNodes()->GetmuT(iPoint);
+
       if (tkeNeeded) turb_ke = solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0);
       nodes->SetEddyViscosity(iPoint, eddy_visc);
     }
 
     /*--- Compressible flow, primitive variables. ---*/
 
-    bool nonphysical = nodes->SetPrimVar(iPoint,FluidModel);
+    bool nonphysical = nodes->SetPrimVar(iPoint, eddy_visc, turb_ke, FluidModel);
 
     /* Check for non-realizable states for reporting. */
 
@@ -666,7 +667,7 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
 
     for (auto iDim = 0u; iDim < nDim; iDim++)
       LinSysRes(iPoint, nSpecies+iDim) = 0.0;
-  nodes->SetVal_ResTruncError_Zero(iPoint);
+    nodes->SetVel_ResTruncError_Zero(iPoint);
 
     /*--- Calculate the gradient of temperature ---*/
     su2double Ti   = nodes->GetTemperature(iPoint);
@@ -1018,7 +1019,7 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
     su2double Mass = 0.0;
     for (auto iSpecies=0u; iSpecies<nSpecies; iSpecies++)
       Mass += Vi[iSpecies]*Ms[iSpecies];
-    su2double Cptr = rhoCvtr/rho + Ru/Mass;
+    su2double Cptr = rhoCvtr + Ru/Mass;
     su2double tmp1 = Cptr*(Eddy_Visc/Prandtl_Turb);
     su2double scl  = tmp1/ktr;
     ktr += Cptr*(Eddy_Visc/Prandtl_Turb);

@@ -216,7 +216,7 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
   SetBaseClassPointerToNodes();
   SetBaseClassPointerToNodeInfty();
 
-  node_infty->SetPrimVar(0, FluidModel);
+  node_infty->SetPrimVar(0, 0.0, 0.0, FluidModel);
 
   /*--- Initial comms. ---*/
 
@@ -328,7 +328,7 @@ unsigned long CNEMOEulerSolver::SetPrimitive_Variables(CSolver **solver_containe
 
     /*--- Incompressible flow, primitive variables ---*/
 
-    nonphysical = nodes->SetPrimVar(iPoint,FluidModel);
+    nonphysical = nodes->SetPrimVar(iPoint, 0.0, 0.0, FluidModel);
 
     /* Check for non-realizable states for reporting. */
 
@@ -1635,7 +1635,11 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contai
         visc_numerics->SetThermalConductivity_ve(nodes->GetThermalConductivity_ve(iPoint),
                                                  nodes->GetThermalConductivity_ve(iPoint));
 
-        /*--- Compute and update residual ---*/
+	if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
+          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
+                                              solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
+
+	/*--- Compute and update residual ---*/
         auto residual = visc_numerics->ComputeResidual(config);
 
         LinSysRes.SubtractBlock(iPoint, residual);
