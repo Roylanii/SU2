@@ -226,8 +226,8 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
   bool nonPhys = false;
 
   /*--- Set temperature clipping values ---*/
-  Tmin   = 10.0; Tmax   = 8E4;
-  Tvemin = 10.0; Tvemax = 8E4;
+  Tmin   = 50.0; Tmax   = 8E4;
+  Tvemin = 50.0; Tvemax = 8E4;
 
   /*--- Rename variables for convenience ---*/
   su2double rhoE   = U[nSpecies+nDim];     // Density * energy [J/m3]
@@ -242,7 +242,7 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
       U[iSpecies]            = 1E-20;
       V[RHOS_INDEX+iSpecies] = 1E-20;
       rhos[iSpecies]         = 1E-20;
-      //nonPhys                = true;
+    //nonPhys                = true;
     } else {
       V[RHOS_INDEX+iSpecies] = U[iSpecies];
       rhos[iSpecies]         = U[iSpecies];
